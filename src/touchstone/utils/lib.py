@@ -14,6 +14,46 @@ def mergedicts(dict1, dict2, parent_dict={}, parent_key=""):
         parent_dict[parent_key] = dict1
 
 
+def _parse_data(inputdict, my_uuid):
+    new_dict = {}
+    total = {"first": {"val": 0, "edited": False}, "second": {"val": 0, "edited": False}}
+
+    for key in inputdict.keys():
+        if type(inputdict[key]) == dict:
+            new_dict[key] = _parse_data(inputdict[key], my_uuid)
+        else:
+            print('key ' + str(key))
+            print('inputdict' + str(inputdict[key]))
+            if inputdict[key]:
+                if not total['first']['edited']:
+                    total['first']['val'] = inputdict[key]
+                    total['first']['edited'] = True
+                else:
+                    total['second']['val'] = inputdict[key]
+                    total['second']['edited'] = True
+    if total['first']['edited'] and total['second']['edited']:
+
+        new_dict = {my_uuid: ((total['second']['val'] - total['first']['val']) / total['first']['val'])}
+    print('new dict ' + str(new_dict))
+    return new_dict
+
+
+def gen_average(inputdict, my_uuid):
+    new_dict = {}
+    total = 0
+    for key in inputdict.keys():
+        if type(inputdict[key]) == dict:
+            new_dict[key] = _parse_data(inputdict[key], my_uuid)
+        else:
+            print('key ' + str(key))
+            print('inputdict' + str(inputdict[key]))
+            if inputdict[key]:
+                total += inputdict[key]
+    if total != 0:
+        new_dict = {my_uuid: total / len(inputdict.keys())}
+    print('new dict ' + str(new_dict))
+    return new_dict
+
 def flatten_and_discard(data, discard_keys=[], row_list=[]):
     """
     Flattens a dictionary and discards keys given by discard_keys
