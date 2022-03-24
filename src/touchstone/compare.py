@@ -108,9 +108,9 @@ def parse_args(args):
         const=logging.DEBUG,
     )
     parser.add_argument(
-        "-av",
-        "--gen-avg",
-        dest="gen_avg",
+        "-c",
+        "--compare",
+        dest="compare",
         help="generate avg comparison",
         type=bool,
     )
@@ -226,10 +226,11 @@ def main(args):
                 if args.output == "yaml":
                     output_file.write(yaml.dump(timeseries_result, allow_unicode=True))
                 return
-            compare_dict = _parse_data(index_json, 1)
 
-            mergedicts(compare_dict, index_json)
             if index_json and not args.tolerancy_rules:
+                if args.compare:
+                    compare_dict = _parse_data(index_json, 1)
+                    mergedicts(compare_dict, index_json)
                 row_list = []
                 if args.output == "csv":
                     row_list.append(compute_header)
@@ -244,8 +245,6 @@ def main(args):
                 identifiers = args.aliases if args.aliases else args.uuid
                 compute_header = extract_headers(compute) + ["result", "deviation"] + identifiers
                 decision_maker.run(baseline_uuid, index_json, compute_header, output_file, args)
-
-
 
     if metadata_dict:
         main_json["metadata"] = metadata_dict
