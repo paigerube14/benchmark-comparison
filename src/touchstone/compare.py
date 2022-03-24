@@ -10,7 +10,7 @@ from touchstone import __version__
 from touchstone.benchmarks.generic import Benchmark
 from touchstone import decision_maker
 from . import databases
-from .utils.lib import mergedicts, flatten_and_discard, extract_headers
+from .utils.lib import mergedicts, flatten_and_discard, extract_headers, _parse_data
 
 __author__ = "red-hat-perfscale"
 __copyright__ = "red-hat-perfscale"
@@ -107,6 +107,13 @@ def parse_args(args):
         action="store_const",
         const=logging.DEBUG,
     )
+    parser.add_argument(
+        "-av",
+        "--gen-avg",
+        dest="gen_avg",
+        help="generate avg comparison",
+        type=bool,
+    )
     return parser.parse_args(args)
 
 
@@ -183,6 +190,7 @@ def main(args):
                 database_instance = databases.grab(args.database, conn_url=args.conn_url[uuid_index])
                 # Add method emit_compute_dict to the elasticsearch class
                 if "aggregations" in compute:
+                    print('aggregations')
                     alias = args.aliases[uuid_index] if args.aliases else None
                     result = database_instance.emit_compute_dict(
                         uuid=uuid, compute_map=compute, index=index, identifier=args.identifier, alias=alias,
@@ -196,6 +204,7 @@ def main(args):
                     compute_header = extract_headers(compute, args.uuid, args.aliases)
 
                 elif "timeseries" in compute and compute["timeseries"]:
+                    print('timeseries')
                     timeseries_result = database_instance.get_timeseries_results(
                         uuid=uuid, compute_map=compute, index=index, identifier=args.identifier
                     )
@@ -209,12 +218,17 @@ def main(args):
 
                 else:
                     logger.error("Not Supported configutation")
+
+
             if timeseries_result:
                 if not args.output or args.output == "json":
                     output_file.write(json.dumps(timeseries_result, indent=4))
                 if args.output == "yaml":
                     output_file.write(yaml.dump(timeseries_result, allow_unicode=True))
                 return
+            compare_dict = _parse_data(index_json, 1)
+
+            mergedicts(compare_dict, index_json)
             if index_json and not args.tolerancy_rules:
                 row_list = []
                 if args.output == "csv":
@@ -230,6 +244,9 @@ def main(args):
                 identifiers = args.aliases if args.aliases else args.uuid
                 compute_header = extract_headers(compute) + ["result", "deviation"] + identifiers
                 decision_maker.run(baseline_uuid, index_json, compute_header, output_file, args)
+
+
+
     if metadata_dict:
         main_json["metadata"] = metadata_dict
     if args.output == "json":
